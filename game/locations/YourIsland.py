@@ -159,16 +159,6 @@ class FairyForest(location.SubLocation):
                 config.the_player.add_item(MythicBowGun())
                 break
 
-def handle_movement(player_input):
-    directions = ["north", "south", "east", "west"]
-    if player_input in directions:
-        YourIsland.current_location.move(player_input)
-    else:
-        announce("Invalid direction. Try 'north', 'south', 'east', or 'west'.")
-
-player_input = input("Enter a direction to move: ")
-handle_movement(player_input)
-
 class MythicBowGun(Item):
     def __init__(self):
         super().__init__("MythicBowGun", 1)
