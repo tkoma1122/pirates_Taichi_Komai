@@ -19,7 +19,7 @@ class YourIsland(location.Location):
         self.visitable = True
         self.starting_location = BeachWithShip(self)
         self.Fairy_Forest = FairyForest(self)
-        
+        self.current_location = self.starting_location
         self.locations = {}
         self.locations["FairyIsland"] = self.Fairy_Forest
         self.locations["southBeach"] = self.starting_location
@@ -32,6 +32,14 @@ class YourIsland(location.Location):
         config.the_player.location = self.starting_location
         config.the_player.location.enter()
         super().visit()
+
+    def move(self, direction):
+        next_location = self.current_location.get_next_location(direction)
+        if next_location:
+            self.current_location = next_location
+            self.current_location.enter()
+        else:
+            announce("You can't go that way.")
 
 class BeachWithShip(location.SubLocation):
 
@@ -52,6 +60,14 @@ class BeachWithShip(location.SubLocation):
             config.the_player.next_loc = config.the_player.ship
             config.the_player.visiting = False
 
+    def get_next_location(self, direction):
+        if direction == "north":
+            return self.main_location.locations["shrine"]
+        elif direction == "south":
+            return config.the_player.ship  # Assuming this is the ship location
+        else:
+            return None
+
 class Shrine(location.SubLocation):
 
     def __init__(self, mainLocation):
@@ -68,8 +84,6 @@ class Shrine(location.SubLocation):
 
     def enter(self):
         announce("You walk to the top of the hill. A finely-crafted shrine sits before you. You can investigate the shrine.")
-
-
 
     def process_verb(self, verb, cmd_list, nouns):
         if verb == "investigate":
@@ -116,6 +130,12 @@ class Shrine(location.SubLocation):
         riddleList = [("Under a full moon, I throw a yellow hat into the red sea. What happens to the yellow hat??", "wet")]
         return random.choice(riddleList)
     
+    def get_next_location(self, direction):
+        if direction in ["north", "east", "south", "west"]:
+            return self.main_location.locations["southBeach"]
+        else:
+            return None
+    
 class FairyForest(location.SubLocation):
     def enter(self):
         announce("You've arrived at the Fairy Forest. To obtain a powerful treasure, solve the Number Puzzle Game.")
@@ -139,7 +159,15 @@ class FairyForest(location.SubLocation):
                 config.the_player.add_item(MythicBowGun())
                 break
 
+def handle_movement(player_input):
+    directions = ["north", "south", "east", "west"]
+    if player_input in directions:
+        YourIsland.current_location.move(player_input)
+    else:
+        announce("Invalid direction. Try 'north', 'south', 'east', or 'west'.")
 
+player_input = input("Enter a direction to move: ")
+handle_movement(player_input)
 
 class MythicBowGun(Item):
     def __init__(self):
