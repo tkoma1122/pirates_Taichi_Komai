@@ -1,8 +1,14 @@
 from game import location
-from game.config import config
+import game.config as config
 from game.display import announce
+from game.events import *
 from game.items import Item
 import random
+import numpy
+from game import event
+from game.combat import Monster
+import game.combat as combat
+from game.display import menu
 
 class YourIsland(location.Location):
 
@@ -28,6 +34,9 @@ class YourIsland(location.Location):
         super().visit()
 
 class BeachWithShip(location.SubLocation):
+
+    def enter(self):
+        announce("You arrived the Mythic Island.")
 
     def __init__(self, mainLocation):
         super().__init__(mainLocation)
@@ -60,43 +69,41 @@ class Shrine(location.SubLocation):
     def enter(self):
         announce("You walk to the top of the hill. A finely-crafted shrine sits before you. You can investigate the shrine.")
 
-    def process_verb(self, verb, cmd_list, nouns):
-        if(verb == "north" or verb == "east" or verb == "south" or verb == "west"):
-            config.the_player.next_loc = self.main_location.locations["southBeach"]
-        if(verb == "investigate"):
-            self.HandleShrine()
 
-    def HandleShrine(self):
-        if (not self.shrineUsed):
+
+    def process_verb(self, verb, cmd_list, nouns):
+        if verb == "investigate":
+            self.handle_shrine()
+
+    def handle_shrine(self):
+        if not self.shrineUsed:
             announce("You investigate the shrine and hear a voice in your head.")
             announce("'I am the guardian of this shrine. Answer my riddles and be rewarded.'")
-            choice = input("Answer the riddles?")
-            if ("yes" in choice.lower()):
-                self.HandleRiddles()
+            choice = input("Answer the riddles? ")
+
+            if "yes" in choice.lower():
+                self.handle_riddles()
             else:
                 announce("You turn away from the shrine.")
         else:
-            announce("The shrine lays dormant.")
+            announce("The shrine lies dormant.")
 
-    def HandleRiddles(self):
-        riddle = self.GetRiddleAndAnswer()
+    def handle_riddles(self):
+        riddle = self.get_riddle_and_answer()
         guesses = self.RidDLE_AMOUNT
         self.shrineUsed = True
 
-        while (guesses > 0):
+        while guesses > 0:
+            announce(riddle[0])
+            plural = "" if guesses == 1 else "s"
+            announce(f"You have {guesses} attempt{plural} left.")
+            choice = input("What is your guess? ")
 
-            print(riddle[0])
-            plural = ""
-            if(guesses != 1):
-                plural = "s"
-
-            print(f"You have {guesses} left.")
-            choice = input("What is your guess?")
-
-            if (riddle[1] in choice.lower()):
-                self.RiddleReward()
-                announce('You have guessed correctly and been blessed by the spirit.')
-                guesses = 0
+            if riddle[1] in choice.lower():
+                self.riddle_reward()
+                announce("You have guessed correctly and received the SwordofJustice!")
+                config.the_player.add_item(SwordofJustice())
+                break
             else:
                 guesses -= 1
                 announce("You have guessed incorrectly.")
@@ -111,10 +118,27 @@ class Shrine(location.SubLocation):
     
 class FairyForest(location.SubLocation):
     def enter(self):
-        announce("You arrived the Fairy Forest. To get powerful treasure, you should solve Puzzle Game.")
+        announce("You've arrived at the Fairy Forest. To obtain a powerful treasure, solve the Number Puzzle Game.")
 
     def process_verb(self, verb, cmd_list, nouns):
-        pass
+        if verb == "play":
+            self.play_number_puzzle()
+
+    def play_number_puzzle(self):
+        target_number = random.randint(1, 100)
+        announce(f"Find the number! It's between 1 and 100.")
+
+        while True:
+            guess = int(input("Enter your guess: "))
+            if guess < target_number:
+                announce("Go higher.")
+            elif guess > target_number:
+                announce("Go lower.")
+            else:
+                announce("Congratulations! You've solved the puzzle and obtained the MythicBowGun.")
+                config.the_player.add_item(MythicBowGun())
+                break
+
 
 
 class MythicBowGun(Item):
