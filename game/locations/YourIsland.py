@@ -18,12 +18,13 @@ class YourIsland(location.Location):
         self.symbol = 'Y'
         self.visitable = True
         self.starting_location = BeachWithShip(self)
-        self.Fairy_Forest = FairyForest(self)
-        self.current_location = self.starting_location
         self.locations = {}
-        self.locations["FairyIsland"] = self.Fairy_Forest
-        self.locations["southBeach"] = self.starting_location
-        self.locations["shrine"] = Shrine(self)
+
+        self.Fairy_Forest = FairyForest(self)
+        
+        self.locations["southbeach"] = self.starting_location
+        self.locations["FairyForest"] = FairyForest(self)
+        self.locations["MythicShrine"] = MythicShrine(self)
 
     def enter(self, ship):
         announce("You arrive at an island.")
@@ -43,36 +44,38 @@ class YourIsland(location.Location):
 
 class BeachWithShip(location.SubLocation):
 
-    def enter(self):
-        announce("You arrived the Mythic Island.")
-
     def __init__(self, mainLocation):
         super().__init__(mainLocation)
-        self.name ="southBeach"
+        self.name = "southbeach"
         self.verbs["north"] = self
         self.verbs["south"] = self
+        self.verbs["east"] = self
+        self.verbs["west"] = self
+        self.verbs["investigate"] = self
+
+    def enter(self):
+        announce("Apparently you have drifted off to some forgotten island.\n" +
+                 "It looks like we have no choice but to continue north, but I have a bad feeling about it.\n" +
+                 "But being a forgotten island, there must surely be treasures to be found there. It is worth a little exploration.")
 
     def process_verb(self, verb, cmd_list, nouns):
-        if(verb == "north"):
-            config.the_player.next_loc = self.main_location.locations["shrine"]
-        if(verb == "south"):
+        if (verb == "south"):
             announce("You return to your ship.")
             config.the_player.next_loc = config.the_player.ship
             config.the_player.visiting = False
+        elif (verb == "north"):
+            config.the_player.next_loc = self.main_location.locations["MythicShrine"]
+        elif (verb == "east"):
+            config.the_player.next_loc = self.main_location.locations["FairyForest"]
+        elif (verb == "west"):
+            config.the_player.next_loc = self.main_location.locations[f"{verb}Beach"]
 
-    def get_next_location(self, direction):
-        if direction == "north":
-            return self.main_location.locations["shrine"]
-        elif direction == "south":
-            return config.the_player.ship  # Assuming this is the ship location
-        else:
-            return None
 
-class Shrine(location.SubLocation):
+class MythicShrine(location.SubLocation):
 
     def __init__(self, mainLocation):
         super().__init__(mainLocation)
-        self.name ="shrine"
+        self.name ="MythicShrine"
         self.verbs["north"] = self
         self.verbs["south"] = self
         self.verbs["east"] = self
@@ -132,32 +135,31 @@ class Shrine(location.SubLocation):
     
     def get_next_location(self, direction):
         if direction in ["north", "east", "south", "west"]:
-            return self.main_location.locations["southBeach"]
+            return self.main_location.locations["Southcoastbeach"]
         else:
             return None
     
 class FairyForest(location.SubLocation):
-    def enter(self):
-        announce("You've arrived at the Fairy Forest. To obtain a powerful treasure, solve the Number Puzzle Game.")
+    def __init__(self):
+        super().__init__("FairyForest")
 
-    def process_verb(self, verb, cmd_list, nouns):
-        if verb == "play":
-            self.play_number_puzzle()
+    def enter(self):
+        super().enter()
+        print("You've arrived at the Fairy Forest. Solve the Number Puzzle Game to obtain a treasure.")
 
     def play_number_puzzle(self):
         target_number = random.randint(1, 100)
-        announce(f"Find the number! It's between 1 and 100.")
+        print(f"Find the number! It's between 1 and 100.")
 
         while True:
             guess = int(input("Enter your guess: "))
+
             if guess < target_number:
-                announce("Go higher.")
+                print("Go higher.")
             elif guess > target_number:
-                announce("Go lower.")
+                print("Go lower.")
             else:
-                announce("Congratulations! You've solved the puzzle and obtained the MythicBowGun.")
-                config.the_player.add_item(MythicBowGun())
-                break
+                print("Congratulations! You've solved the puzzle and obtained the treasure.")
 
 class MythicBowGun(Item):
     def __init__(self):
